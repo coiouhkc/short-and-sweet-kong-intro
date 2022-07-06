@@ -1,0 +1,55 @@
+version: '3'
+services:
+  kong:
+    image: kong
+    depends_on:
+      - postgres
+      - kong-migrate
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 3
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PG_HOST: postgres
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+
+  kong-migrate:
+    image: kong
+    depends_on:
+      - postgres
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 3
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PG_HOST: postgres
+    command: "kong migrations bootstrap"
+
+  postgres:
+    image: postgres:11-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+      
+      
+  main-service:
+    image: bratuhia/main-service:1.0.0-SNAPSHOT
+    environment:
+      QUARKUS_REST_CLIENT_ADDITIONAL_API_URL: "http://additional-service:8080"
+
+  additional-service:
+    image: bratuhia/additional-service:1.0.0-SNAPSHOT
